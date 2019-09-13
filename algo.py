@@ -72,7 +72,7 @@ def find_stop(current_value, minute_history, now):
 
 def run(tickers, market_open_dt, market_close_dt):
     # Establish streaming connection
-    conn = tradeapi.StreamConn(key_id=api_key_id, secret_key=api_secret)
+    conn = tradeapi.StreamConn(base_url=base_url, key_id=api_key_id, secret_key=api_secret)
 
     # Update initial state with information from tickers
     volume_today = {}
@@ -123,7 +123,7 @@ def run(tickers, market_open_dt, market_close_dt):
         if last_order is not None:
             event = data.event
             if event == 'partial_fill':
-                qty = data.order['filled_qty']
+                qty = int(data.order['filled_qty'])
                 if data.order['side'] == 'sell':
                     qty = qty * -1
                 positions[symbol] = (
@@ -133,7 +133,7 @@ def run(tickers, market_open_dt, market_close_dt):
                 positions[symbol] += qty
                 open_orders[symbol] = data.order
             elif event == 'fill':
-                qty = data.order['filled_qty']
+                qty = int(data.order['filled_qty'])
                 if data.order['side'] == 'sell':
                     qty = qty * -1
                 positions[symbol] = (
@@ -146,7 +146,7 @@ def run(tickers, market_open_dt, market_close_dt):
                 partial_fills[symbol] = 0
                 open_orders[symbol] = None
 
-    @conn.on(r'A\..*')
+    @conn.on(r'A$')
     async def handle_second_bar(conn, channel, data):
         symbol = data.symbol
 
@@ -336,7 +336,7 @@ def run(tickers, market_open_dt, market_close_dt):
             ])
 
     # Replace aggregated 1s bars with incoming 1m bars
-    @conn.on(r'AM\..*')
+    @conn.on(r'AM$')
     async def handle_minute_bar(conn, channel, data):
         ts = data.start
         ts -= timedelta(microseconds=ts.microsecond)
